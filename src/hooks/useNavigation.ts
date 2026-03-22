@@ -1,3 +1,4 @@
+/// <reference types="google.maps" />
 import { useState, useCallback, useRef, useEffect } from "react";
 import { RouteResult } from "./useGoogleMaps";
 import { useToast } from "./use-toast";

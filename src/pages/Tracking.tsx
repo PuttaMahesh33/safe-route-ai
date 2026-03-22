@@ -1,3 +1,4 @@
+/// <reference types="google.maps" />
 import { useState, useEffect, useRef } from "react";
 import { Navbar } from "@/components/Navbar";
 import { FloatingPanicButton } from "@/components/PanicButton";
