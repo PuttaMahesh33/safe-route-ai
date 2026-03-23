@@ -1,7 +1,7 @@
 /// <reference types="google.maps" />
 import { useEffect, useState, useCallback } from "react";
 
-const GOOGLE_MAPS_API_KEY = "AIzaSyAvr5KnCLi0CdN8S70klpsbr4x8e-KDB6U";
+const GOOGLE_MAPS_API_KEY = "AIzaSyAEfGKrHY-YVaz3V_i0vY8pypxwJx343rc";
 
 declare global {
   interface Window {
@@ -12,7 +12,7 @@ declare global {
 
 let isLoading = false;
 let isLoaded = false;
-const callbacks: (() => void)[] = [];
+const callbacks: ((loaded: boolean) => void)[] = [];
 
 export function useGoogleMaps() {
   const [loaded, setLoaded] = useState(isLoaded);
@@ -24,7 +24,7 @@ export function useGoogleMaps() {
     }
 
     if (isLoading) {
-      callbacks.push(() => setLoaded(true));
+      callbacks.push((loadedState) => setLoaded(loadedState));
       return;
     }
 
@@ -34,14 +34,21 @@ export function useGoogleMaps() {
       isLoaded = true;
       isLoading = false;
       setLoaded(true);
-      callbacks.forEach((cb) => cb());
+      callbacks.forEach((cb) => cb(true));
       callbacks.length = 0;
     };
 
     const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places&callback=initGoogleMaps`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places,geometry&callback=initGoogleMaps`;
     script.async = true;
     script.defer = true;
+    script.onerror = () => {
+      isLoading = false;
+      isLoaded = false;
+      setLoaded(false);
+      callbacks.forEach((cb) => cb(false));
+      callbacks.length = 0;
+    };
     document.head.appendChild(script);
 
     return () => {
