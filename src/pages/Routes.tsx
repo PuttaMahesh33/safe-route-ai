@@ -17,6 +17,7 @@ type LocationStatus = 'detecting' | 'active' | 'error' | 'denied';
 
 export default function RoutesPage() {
   const [destination, setDestination] = useState("");
+  const [destinationPlace, setDestinationPlace] = useState<google.maps.places.PlaceResult | null>(null);
   const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationStatus, setLocationStatus] = useState<LocationStatus>('detecting');
