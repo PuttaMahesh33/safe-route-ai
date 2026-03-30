@@ -33,12 +33,24 @@ export function PlacesAutocomplete({
 
     autocomplete.addListener("place_changed", () => {
       const place = autocomplete.getPlace();
+      const placeLabel = place.formatted_address || place.name || "";
+      const isGoogleErrorPlace = /oops!\s*something\s*went\s*wrong/i.test(placeLabel);
+      const hasCoordinates = !!place.geometry?.location;
+
+      if (isGoogleErrorPlace) {
+        return;
+      }
+
       if (place.formatted_address) {
         onChange(place.formatted_address);
-        onPlaceSelect?.(place);
+        if (hasCoordinates) {
+          onPlaceSelect?.(place);
+        }
       } else if (place.name) {
         onChange(place.name);
-        onPlaceSelect?.(place);
+        if (hasCoordinates) {
+          onPlaceSelect?.(place);
+        }
       }
     });
 

@@ -1,23 +1,36 @@
 /// <reference types="google.maps" />
 import { useEffect, useState, useCallback } from "react";
 
-const GOOGLE_MAPS_API_KEY = "AIzaSyAEfGKrHY-YVaz3V_i0vY8pypxwJx343rc";
+const GOOGLE_MAPS_API_KEY =
+  import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "AIzaSyAEfGKrHY-YVaz3V_i0vY8pypxwJx343rc";
 
 declare global {
   interface Window {
     google: typeof google;
     initGoogleMaps: () => void;
+    gm_authFailure?: () => void;
   }
 }
 
 let isLoading = false;
 let isLoaded = false;
+let hasScriptError = false;
 const callbacks: ((loaded: boolean) => void)[] = [];
 
 export function useGoogleMaps() {
   const [loaded, setLoaded] = useState(isLoaded);
 
   useEffect(() => {
+    if (!GOOGLE_MAPS_API_KEY) {
+      setLoaded(false);
+      return;
+    }
+
+    if (hasScriptError) {
+      setLoaded(false);
+      return;
+    }
+
     if (isLoaded) {
       setLoaded(true);
       return;
@@ -30,7 +43,25 @@ export function useGoogleMaps() {
 
     isLoading = true;
 
+    const setLoadFailure = () => {
+      hasScriptError = true;
+      isLoading = false;
+      isLoaded = false;
+      setLoaded(false);
+      callbacks.forEach((cb) => cb(false));
+      callbacks.length = 0;
+    };
+
+    window.gm_authFailure = () => {
+      setLoadFailure();
+    };
+
     window.initGoogleMaps = () => {
+      if (hasScriptError || !window.google?.maps?.places || !window.google?.maps?.geometry) {
+        setLoadFailure();
+        return;
+      }
+
       isLoaded = true;
       isLoading = false;
       setLoaded(true);
@@ -43,11 +74,7 @@ export function useGoogleMaps() {
     script.async = true;
     script.defer = true;
     script.onerror = () => {
-      isLoading = false;
-      isLoaded = false;
-      setLoaded(false);
-      callbacks.forEach((cb) => cb(false));
-      callbacks.length = 0;
+      setLoadFailure();
     };
     document.head.appendChild(script);
 
