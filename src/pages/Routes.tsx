@@ -18,6 +18,7 @@ type LocationStatus = 'detecting' | 'active' | 'error' | 'denied';
 export default function RoutesPage() {
   const [destination, setDestination] = useState("");
   const [destinationPlace, setDestinationPlace] = useState<google.maps.places.PlaceResult | null>(null);
+  const [selectedDestinationLabel, setSelectedDestinationLabel] = useState("");
   const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationStatus, setLocationStatus] = useState<LocationStatus>('detecting');
@@ -114,11 +115,15 @@ export default function RoutesPage() {
     const sourceCoords = `${currentLocation.lat},${currentLocation.lng}`;
     
     // Use selected place's coordinates if available, otherwise fall back to text
-    let destinationQuery = destination;
+    let destinationQuery = destination.trim();
     if (destinationPlace?.geometry?.location) {
       const lat = destinationPlace.geometry.location.lat();
       const lng = destinationPlace.geometry.location.lng();
       destinationQuery = `${lat},${lng}`;
+    } else if (destinationPlace?.formatted_address) {
+      destinationQuery = destinationPlace.formatted_address;
+    } else if (destinationPlace?.name) {
+      destinationQuery = destinationPlace.name;
     }
     
     const results = await getDirections(sourceCoords, destinationQuery);
@@ -351,15 +356,25 @@ export default function RoutesPage() {
                         value={destination}
                         onChange={(val) => {
                           setDestination(val);
-                          // Clear selected place when user types manually
-                          setDestinationPlace(null);
+
+                          // Keep selected place when Google widget updates the input with the same selected label.
+                          if (
+                            destinationPlace &&
+                            selectedDestinationLabel &&
+                            val.trim().toLowerCase() !== selectedDestinationLabel.trim().toLowerCase()
+                          ) {
+                            setDestinationPlace(null);
+                            setSelectedDestinationLabel("");
+                          }
                         }}
                         onPlaceSelect={(place) => {
                           setDestinationPlace(place);
-                          if (place.formatted_address) {
-                            setDestination(place.formatted_address);
-                          } else if (place.name) {
-                            setDestination(place.name);
+
+                          const nextLabel = place.formatted_address || place.name || "";
+                          setSelectedDestinationLabel(nextLabel);
+
+                          if (nextLabel) {
+                            setDestination(nextLabel);
                           }
                         }}
                         placeholder="Where do you want to go?"
