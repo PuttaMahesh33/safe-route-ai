@@ -113,7 +113,15 @@ export default function RoutesPage() {
     // Use current GPS coordinates as source
     const sourceCoords = `${currentLocation.lat},${currentLocation.lng}`;
     
-    const results = await getDirections(sourceCoords, destination);
+    // Use selected place's coordinates if available, otherwise fall back to text
+    let destinationQuery = destination;
+    if (destinationPlace?.geometry?.location) {
+      const lat = destinationPlace.geometry.location.lat();
+      const lng = destinationPlace.geometry.location.lng();
+      destinationQuery = `${lat},${lng}`;
+    }
+    
+    const results = await getDirections(sourceCoords, destinationQuery);
     if (results.length > 0) {
       setSelectedRoute(results[0].id);
       toast.success(`Found ${results.length} routes from your current location.`);
@@ -341,7 +349,19 @@ export default function RoutesPage() {
                       </label>
                       <PlacesAutocomplete
                         value={destination}
-                        onChange={setDestination}
+                        onChange={(val) => {
+                          setDestination(val);
+                          // Clear selected place when user types manually
+                          setDestinationPlace(null);
+                        }}
+                        onPlaceSelect={(place) => {
+                          setDestinationPlace(place);
+                          if (place.formatted_address) {
+                            setDestination(place.formatted_address);
+                          } else if (place.name) {
+                            setDestination(place.name);
+                          }
+                        }}
                         placeholder="Where do you want to go?"
                       />
                     </div>
